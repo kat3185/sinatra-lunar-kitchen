@@ -34,9 +34,8 @@ class Recipe
 
   def ingredients
     ingredient_sql = "SELECT ingredients.id, ingredients.name
-                      FROM recipes
-                      JOIN ingredients
-                      ON(recipes.id = ingredients.recipe_id);"
+                      FROM ingredients
+                      WHERE #{id} = ingredients.recipe_id;"
     recipe_ingredient_list = []
     ingredients_from_database = db_connection do |conn|
                                   conn.exec(ingredient_sql)

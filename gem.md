@@ -1,75 +1,52 @@
-GEM
-  remote: https://rubygems.org/
-  specs:
-    addressable (2.3.6)
-    backports (3.6.0)
-    capybara (2.3.0)
-      mime-types (>= 1.16)
-      nokogiri (>= 1.3.3)
-      rack (>= 1.0.0)
-      rack-test (>= 0.5.4)
-      xpath (~> 2.0)
-    coderay (1.1.0)
-    diff-lcs (1.2.5)
-    launchy (2.4.2)
-      addressable (~> 2.3)
-    method_source (0.8.2)
-    mime-types (2.3)
-    mini_portile (0.6.0)
-    multi_json (1.10.1)
-    nokogiri (1.6.2.1)
-      mini_portile (= 0.6.0)
-    pg (0.17.1)
-    pry (0.9.12.6)
-      coderay (~> 1.0)
-      method_source (~> 0.8)
-      slop (~> 3.4)
-    rack (1.5.2)
-    rack-protection (1.5.3)
-      rack
-    rack-test (0.6.2)
-      rack (>= 1.0)
-    rspec (3.0.0)
-      rspec-core (~> 3.0.0)
-      rspec-expectations (~> 3.0.0)
-      rspec-mocks (~> 3.0.0)
-    rspec-core (3.0.0)
-      rspec-support (~> 3.0.0)
-    rspec-expectations (3.0.0)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.0.0)
-    rspec-mocks (3.0.0)
-      rspec-support (~> 3.0.0)
-    rspec-support (3.0.0)
-    sinatra (1.4.5)
-      rack (~> 1.4)
-      rack-protection (~> 1.4)
-      tilt (~> 1.3, >= 1.3.4)
-    sinatra-contrib (1.4.2)
-      backports (>= 2.0)
-      multi_json
-      rack-protection
-      rack-test
-      sinatra (~> 1.4.0)
-      tilt (~> 1.3)
-    sinatra-reloader (1.0)
-      sinatra-contrib
-    slop (3.5.0)
-    tilt (1.4.1)
-    xpath (2.0.0)
-      nokogiri (~> 1.3)
+require_relative 'connection'
 
-PLATFORMS
-  ruby
+class Recipe
+  attr_reader :id, :name, :instructions, :description
 
-DEPENDENCIES
-  capybara
-  launchy
-  pg
-  pry
-  rspec
-  sinatra
-  sinatra-reloader
+  def initialize(id, name, instructions, description)
+    @id = id
+    @name = name
+    @instructions = instructions
+    @description = description
+  end
 
-BUNDLED WITH
-   1.10.3
+  def self.find(recipe_id)
+    recipes = all
+
+    recipes.each do |recipe|
+      if recipe_id == recipe.id
+        return recipe
+      end
+    end
+  end
+
+  def self.all
+    sql = "SELECT * FROM recipes;"
+    recipe_instances = []
+    recipes_from_database = db_connection do |conn|
+      conn.exec(sql)
+    end
+    recipes_from_database.each do |row|
+      recipe_instances << Recipe.new(row["id"], row["name"],
+                                    row["instructions"], row["description"])
+    end
+    recipe_instances
+  end
+
+  def ingredients
+    ingredient_sql = "SELECT ingredients.id, ingredients.name
+                      FROM recipes
+                      JOIN ingredients
+                      ON(recipes.id = ingredients.recipe_id);"
+    recipe_ingredient_list = []
+    ingredients_from_database = db_connection do |conn|
+                                  conn.exec(ingredient_sql)
+                                end
+    ingredients_from_database.each do |ingredient|
+      recipe_ingredient_list << Ingredient.new(ingredient["id"], ingredient["name"])
+    end
+    recipe_ingredient_list
+  end
+
+
+end
